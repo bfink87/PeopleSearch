@@ -108,7 +108,7 @@ namespace PeopleSearch.Api
                 return BadRequest(ModelState);
             }
 
-            await _repository.AddAsync<Person>(person);
+            await _repository.AddAsync(person);
 
             return CreatedAtAction("GetPerson", new { id = person.Id }, person);
         }
