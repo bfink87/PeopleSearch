@@ -1,6 +1,6 @@
-﻿using PeopleSearch.Models;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using PeopleSearch.Entities;
 
 namespace PeopleSearch.Interfaces
 {

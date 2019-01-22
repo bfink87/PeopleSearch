@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PeopleSearch.Data;
-using PeopleSearch.Models;
+using PeopleSearch.Entities;
 using Xunit;
 
 namespace PeopleSearch.Tests

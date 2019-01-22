@@ -1,15 +1,17 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PeopleSearch.Interfaces;
-using PeopleSearch.Models;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AutoMapper;
+using PeopleSearch.Entities;
+using PeopleSearch.Models;
 
 namespace PeopleSearch.Api
 {
-    [Route("api/[controller]")]
+    [Route("api/people")]
     [ApiController]
     public class PeopleController : ControllerBase
     {
@@ -21,116 +23,123 @@ namespace PeopleSearch.Api
         }
 
         [HttpGet("query={query}")]
-        public async Task<IEnumerable<Person>> SearchAsync([FromRoute] string query)
+        public async Task<IActionResult> Find([FromRoute] string query)
         {
-            // TODO: refactor search to improve performance with large datasets
-            var people = await _repository.ListAsync<Person>();
-
             // Simulate slow query
             Thread.Sleep(3000);
+            
+            var peopleFromRepo = await _repository.ListAsync<Person>();
 
-            var filteredList = people.Where(x => x.FirstName.ToLower().Contains(query)
+            // TODO: refactor search to improve performance with large data sets
+            var filteredPeople = peopleFromRepo.Where(x => x.FirstName.ToLower().Contains(query)
                     || x.LastName.ToLower().Contains(query)
                     || (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(query));
+            
+            var people = Mapper.Map<IEnumerable<PersonDto>>(filteredPeople);
 
-            return filteredList;
+            return Ok(people);
         }
 
-        // GET: api/People
         [HttpGet]
-        public async Task<IEnumerable<Person>> GetPeople()
+        public async Task<IActionResult> List()
         {
             // Simulate slow query
             Thread.Sleep(3000);
 
-            return await _repository.ListAsync<Person>();
+            var peopleFromRepo = await _repository.ListAsync<Person>();
+
+            var people = Mapper.Map<IEnumerable<PersonDto>>(peopleFromRepo);
+                
+            return Ok(people);
         }
 
-        // GET: api/People/5
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetPerson([FromRoute] int id)
+        public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            var personFromRepo = await _repository.GetByIdAsync<Person>(id);
 
-            var person = await _repository.GetByIdAsync<Person>(id);
-
-            if (person == null)
+            if (personFromRepo == null)
             {
                 return NotFound();
             }
 
+            var person = Mapper.Map<PersonDto>(personFromRepo);
+
             return Ok(person);
         }
 
-        // PUT: api/People/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutPerson([FromRoute] int id, [FromBody] Person person)
+        public async Task<IActionResult> Put([FromRoute] int id, [FromBody] PersonForUpdateDto person)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            if (id != person.Id)
+            if (person == null)
             {
                 return BadRequest();
+            }
+            
+            if (!await _repository.EntityExistsAsync<Person>(id))
+            {
+                return NotFound();
+            }
+
+            var personFromRepo = await _repository.GetByIdAsync<Person>(id);
+            if (personFromRepo == null)
+            {
+                return NotFound();
             }
 
             try
             {
-                await _repository.UpdateAsync(person);
+                Mapper.Map(person, personFromRepo);
+
+                await _repository.UpdateAsync(personFromRepo);
             }
             catch (DbUpdateConcurrencyException)
             {
-                var exists = await _repository.EntityExistsAsync<Person>(id);
-                if (!exists)
+                if (!await _repository.EntityExistsAsync<Person>(id))
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+
+                throw;
             }
 
             return NoContent();
         }
 
-        // POST: api/People
         [HttpPost]
-        public async Task<IActionResult> PostPerson([FromBody] Person person)
+        public async Task<IActionResult> Post([FromBody] PersonForCreationDto person)
         {
-            if (!ModelState.IsValid)
+            if (person == null)
             {
-                return BadRequest(ModelState);
+                return BadRequest();
             }
 
-            await _repository.AddAsync(person);
+            var personEntity = Mapper.Map<Person>(person);
 
-            return CreatedAtAction("GetPerson", new { id = person.Id }, person);
+            await _repository.AddAsync(personEntity);
+
+            var personToReturn = Mapper.Map<PersonDto>(personEntity);
+
+            return CreatedAtAction("GetById", new { id = personToReturn.Id }, personToReturn);
         }
 
-        // DELETE: api/People/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePerson([FromRoute] int id)
+        public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var person = await _repository.GetByIdAsync<Person>(id);
-            if (person == null)
+            if (!await _repository.EntityExistsAsync<Person>(id))
             {
                 return NotFound();
             }
 
-            await _repository.DeleteAsync(person);
+            var personFromRepo = await _repository.GetByIdAsync<Person>(id);
+            if (personFromRepo == null)
+            {
+                return NotFound();
+            }
 
-            return Ok(person);
+            await _repository.DeleteAsync(personFromRepo);
+
+            return NoContent();
         }
     }
 }

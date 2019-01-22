@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PeopleSearch.Models;
+using PeopleSearch.Entities;
 
 namespace PeopleSearch.Data
 {

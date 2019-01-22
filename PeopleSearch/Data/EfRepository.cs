@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PeopleSearch.Interfaces;
-using PeopleSearch.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using PeopleSearch.Entities;
 
 namespace PeopleSearch.Data
 {

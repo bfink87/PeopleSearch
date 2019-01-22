@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 
-namespace PeopleSearch.Models
+namespace PeopleSearch.Entities
 {
     public class Person : BaseEntity
     {
@@ -11,9 +10,8 @@ namespace PeopleSearch.Models
         public string City { get; set; }
         public string State { get; set; }
         public string PostalCode { get; set; }
-        // TODO: calculate age from a birthdate instead
-        public int Age { get; set; }
-        // TODO: move interests to a seperate class to maintain them separately
+        public DateTimeOffset DateOfBirth { get; set; }
+        // TODO: move interests to a separate class to maintain them separately
         public string Interests { get; set; }
         public string Photo { get; set; }
     }

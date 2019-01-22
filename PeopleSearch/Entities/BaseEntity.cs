@@ -1,4 +1,4 @@
-﻿namespace PeopleSearch.Models
+﻿namespace PeopleSearch.Entities
 {
     public abstract class BaseEntity
     {

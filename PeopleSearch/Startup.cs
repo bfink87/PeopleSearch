@@ -1,4 +1,5 @@
 ﻿using System;
+using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using PeopleSearch.Data;
 using PeopleSearch.Interfaces;
 using Swashbuckle.AspNetCore.Swagger;
+using PeopleSearch.Helpers;
 
 namespace PeopleSearch
 {
@@ -46,7 +48,7 @@ namespace PeopleSearch
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, AppDbContext context)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, AppDbContext appDbContext)
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
@@ -57,7 +59,14 @@ namespace PeopleSearch
             }
             else
             {
-                app.UseExceptionHandler("/Home/Error");
+                app.UseExceptionHandler(appBuilder =>
+                {
+                    appBuilder.Run(async context =>
+                    {
+                        context.Response.StatusCode = 500;
+                        await context.Response.WriteAsync("An unexpected error occurred. Try again later.");
+                    });
+                });
                 app.UseHsts();
             }
 
@@ -73,8 +82,19 @@ namespace PeopleSearch
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "PeopleSearch API V1");
             });
+            
+            Mapper.Initialize(cfg =>
+            {
+                cfg.CreateMap<Entities.Person, Models.PersonDto>()
+                    .ForMember(dest => dest.Age, opt => opt.MapFrom(src =>
+                        src.DateOfBirth.CalculateAge()));
 
-            SeedData.PopulateTestData(context);
+                cfg.CreateMap<Models.PersonForCreationDto, Entities.Person>();
+                
+                cfg.CreateMap<Models.PersonForUpdateDto, Entities.Person>();
+            });
+
+            SeedData.PopulateTestData(appDbContext);
 
             app.UseMvc(routes =>
             {

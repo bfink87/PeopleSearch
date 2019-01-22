@@ -1,4 +1,4 @@
-﻿using PeopleSearch.Models;
+﻿using PeopleSearch.Entities;
 
 namespace PeopleSearch.Tests
 {
