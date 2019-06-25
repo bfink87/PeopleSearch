@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace PeopleSearch.Entities
 {
@@ -11,8 +12,7 @@ namespace PeopleSearch.Entities
         public string State { get; set; }
         public string PostalCode { get; set; }
         public DateTimeOffset DateOfBirth { get; set; }
-        // TODO: move interests to a separate class to maintain them separately
-        public string Interests { get; set; }
-        public string Photo { get; set; }
+        public List<Interest> Interests { get; set; }
+        public string PhotoUri { get; set; }
     }
 }

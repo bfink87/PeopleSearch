@@ -1,9 +1,6 @@
-﻿using System.Collections.Generic;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PeopleSearch.Interfaces;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using PeopleSearch.Entities;
@@ -15,27 +12,17 @@ namespace PeopleSearch.Api
     [ApiController]
     public class PeopleController : ControllerBase
     {
-        private readonly IRepository _repository;
+        private readonly IPersonService _personService;
 
-        public PeopleController(IRepository repository)
+        public PeopleController(IPersonService personService)
         {
-            _repository = repository;
+            _personService = personService;
         }
 
         [HttpGet("query={query}")]
         public async Task<IActionResult> Find([FromRoute] string query)
         {
-            // Simulate slow query
-            Thread.Sleep(3000);
-            
-            var peopleFromRepo = await _repository.ListAsync<Person>();
-
-            // TODO: refactor search to improve performance with large data sets
-            var filteredPeople = peopleFromRepo.Where(x => x.FirstName.ToLower().Contains(query)
-                    || x.LastName.ToLower().Contains(query)
-                    || (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(query));
-            
-            var people = Mapper.Map<IEnumerable<PersonDto>>(filteredPeople);
+            var people = await _personService.FindAsync(query);
 
             return Ok(people);
         }
@@ -43,12 +30,7 @@ namespace PeopleSearch.Api
         [HttpGet]
         public async Task<IActionResult> List()
         {
-            // Simulate slow query
-            Thread.Sleep(3000);
-
-            var peopleFromRepo = await _repository.ListAsync<Person>();
-
-            var people = Mapper.Map<IEnumerable<PersonDto>>(peopleFromRepo);
+            var people = await _personService.FindAsync();
                 
             return Ok(people);
         }
@@ -56,69 +38,38 @@ namespace PeopleSearch.Api
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            var personFromRepo = await _repository.GetByIdAsync<Person>(id);
+            var person = await _personService.GetByIdAsync(id);
 
-            if (personFromRepo == null)
+            if (person == null)
             {
                 return NotFound();
             }
-
-            var person = Mapper.Map<PersonDto>(personFromRepo);
-
+            
             return Ok(person);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put([FromRoute] int id, [FromBody] PersonForUpdateDto person)
+        public async Task<IActionResult> Put([FromRoute] int id, [FromBody] PersonForManipulation person)
+        {
+            if (person == null)
+            {
+                return BadRequest();
+            }
+
+            await _personService.SaveAsync(person, id);
+
+            return NoContent();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Post([FromBody] PersonForManipulation person)
         {
             if (person == null)
             {
                 return BadRequest();
             }
             
-            if (!await _repository.EntityExistsAsync<Person>(id))
-            {
-                return NotFound();
-            }
-
-            var personFromRepo = await _repository.GetByIdAsync<Person>(id);
-            if (personFromRepo == null)
-            {
-                return NotFound();
-            }
-
-            try
-            {
-                Mapper.Map(person, personFromRepo);
-
-                await _repository.UpdateAsync(personFromRepo);
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await _repository.EntityExistsAsync<Person>(id))
-                {
-                    return NotFound();
-                }
-
-                throw;
-            }
-
-            return NoContent();
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Post([FromBody] PersonForCreationDto person)
-        {
-            if (person == null)
-            {
-                return BadRequest();
-            }
-
-            var personEntity = Mapper.Map<Person>(person);
-
-            await _repository.AddAsync(personEntity);
-
-            var personToReturn = Mapper.Map<PersonDto>(personEntity);
+            var personToReturn = await _personService.SaveAsync(person);
 
             return CreatedAtAction("GetById", new { id = personToReturn.Id }, personToReturn);
         }
@@ -126,18 +77,12 @@ namespace PeopleSearch.Api
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            if (!await _repository.EntityExistsAsync<Person>(id))
+            var result = await _personService.DeleteAsync(id);
+
+            if (!result)
             {
                 return NotFound();
             }
-
-            var personFromRepo = await _repository.GetByIdAsync<Person>(id);
-            if (personFromRepo == null)
-            {
-                return NotFound();
-            }
-
-            await _repository.DeleteAsync(personFromRepo);
 
             return NoContent();
         }

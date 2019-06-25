@@ -12,6 +12,7 @@ using PeopleSearch.Data;
 using PeopleSearch.Interfaces;
 using Swashbuckle.AspNetCore.Swagger;
 using PeopleSearch.Helpers;
+using PeopleSearch.Services;
 
 namespace PeopleSearch
 {
@@ -43,7 +44,8 @@ namespace PeopleSearch
             });
 
             services.AddScoped<IRepository, EfRepository>();
-
+            services.AddScoped<IPersonService, PersonService>();
+            
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
         }
 
@@ -89,9 +91,7 @@ namespace PeopleSearch
                     .ForMember(dest => dest.Age, opt => opt.MapFrom(src =>
                         src.DateOfBirth.CalculateAge()));
 
-                cfg.CreateMap<Models.PersonForCreationDto, Entities.Person>();
-                
-                cfg.CreateMap<Models.PersonForUpdateDto, Entities.Person>();
+                cfg.CreateMap<Models.PersonForManipulation, Entities.Person>();
             });
 
             SeedData.PopulateTestData(appDbContext);

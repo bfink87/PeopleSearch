@@ -2,7 +2,7 @@ using System;
 
 namespace PeopleSearch.Models
 {
-    public class PersonForCreationDto
+    public class PersonForManipulation
     {
         public string FirstName { get; set; }
         public string LastName { get; set; }
